@@ -1,18 +1,12 @@
-from pathlib import Path
-import pandas as pd
-import sqlite3
-import plotly.express as px
+import streamlit as st
+from pages import history, season_2021, drivers, teams
 
-PARENT_FOLDER = Path(__file__).parent.parent
-BD_PATH = PARENT_FOLDER / 'Database' / 'f1.db'
+pages = [
+    st.Page(history.show_history, title="Исторический обзор Формулы 1"),
+    st.Page(season_2021.show_2021, title="Обзор 2021 года"),
+    st.Page(drivers.show_drivers, title="Детализация по пилотам"),
+    st.Page(teams.show_teams, title="Детализация по командам")
+]
 
-
-try:
-    connection = sqlite3.connect(BD_PATH)
-
-except Exception as e:
-    print(e)
-
-finally:
-    connection.close()
-
+pg = st.navigation(pages)
+pg.run()
