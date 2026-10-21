@@ -39,7 +39,7 @@ def show_drivers(connection, func_get_queries, func_show_select):
     with st.container(gap=52):
         with st.container(gap=32):
             with st.container(gap=8):
-                st.title('Детализация по пилотам')
+                st.title('Статистика пилотов за 2021')
                 st.write('Показатели выбранного пилота и его результаты на каждом этапе сезона')
 
             card1, card2, card3, card4, card5 = st.columns(5)
