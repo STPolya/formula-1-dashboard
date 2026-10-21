@@ -1,4 +1,5 @@
 import sqlite3
+# python -m streamlit run "D:\Пет проекты\formula-1-dashboard\Python\main.py"
 from pathlib import Path
 import streamlit as st
 from pages import history, season_2021, drivers, teams
