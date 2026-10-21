@@ -1,5 +1,3 @@
-# python -m streamlit run "D:\Пет проекты\formula-1-dashboard\Python\main.py"
-
 import sqlite3
 from pathlib import Path
 import streamlit as st

@@ -8,7 +8,7 @@ def show_history(connection, func_get_queries, func_show_slider):
         layout='wide',
     )
 
-    with st.container(gap=34):
+    with st.container(gap=32):
         with st.container(gap=28):
             with st.container(gap=8):
                 st.title('Исторический обзор Формулы 1')

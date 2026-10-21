@@ -74,10 +74,103 @@ def history_sql_queries():
     }
 
 def season_21_sql_queries():
-    pass
+    return {
+        'team_champions': """
+            SELECT constructors.name, constructor_standings.points
+            FROM races
+            JOIN constructor_standings ON races.raceId = constructor_standings.raceId
+            JOIN constructors ON constructor_standings.constructorId = constructors.constructorId
+            WHERE races.year = 2021 AND races.round = (SELECT MAX(round) FROM races WHERE year = 2021)
+            ORDER BY constructor_standings.points DESC
+        """,
+
+        'driver_champions': """
+            SELECT drivers.surname, driver_standings.points
+            FROM races
+            JOIN driver_standings ON races.raceId = driver_standings.raceId
+            JOIN drivers ON driver_standings.driverId = drivers.driverId
+            WHERE races.year = 2021 AND races.round = (SELECT MAX(round) FROM races WHERE year = 2021)
+            ORDER BY driver_standings.points DESC
+        """,
+
+        'drivers_points_dynamic': """
+            SELECT drivers.surname, driver_standings.points, races.date || ', ' || circuits.name AS date_place
+            FROM races
+            JOIN driver_standings ON races.raceId = driver_standings.raceId
+            JOIN drivers ON driver_standings.driverId = drivers.driverId AND drivers.surname IN ('Verstappen', 'Hamilton', 'Bottas')
+            JOIN circuits ON races.circuitId = circuits.circuitId
+            where year = 2021
+            ORDER BY date ASC
+        """,
+
+        'teams_points_dynamic': """
+            SELECT constructors.name, constructor_standings.points, races.date || ', ' || circuits.name AS date_place
+            FROM races
+            JOIN constructor_standings ON races.raceId = constructor_standings.raceId
+            JOIN constructors ON constructor_standings.constructorId = constructors.constructorId AND constructors.name IN ('Ferrari', 'Mercedes', 'Red Bull')
+            JOIN circuits ON races.circuitId = circuits.circuitId
+            where year = 2021
+            ORDER BY date ASC
+        """,
+
+        'geography': """
+            SELECT circuits.country
+            FROM circuits
+            JOIN races ON circuits.circuitId = races.circuitId AND races.year = 2021
+        """,
+
+        'drivers_count_wins': """
+            WITH list_drivers AS (
+                SELECT DISTINCT drivers.surname, drivers.driverId
+                FROM drivers
+                JOIN driver_standings ON drivers.driverId = driver_standings.driverId
+                JOIN races ON driver_standings.raceId = races.raceId
+                WHERE races.year = 2021
+            ),
+            season_results AS (
+                    SELECT results.driverId, results.position
+                    FROM results
+                    JOIN races ON results.raceId = races.raceId
+                    WHERE races.year = 2021
+                    AND results.position BETWEEN 1 AND 3
+            )
+            SELECT list_drivers.surname, COUNT(season_results.position) AS podiums
+            FROM list_drivers
+            LEFT JOIN season_results ON list_drivers.driverId = season_results.driverId
+            GROUP BY list_drivers.driverId, list_drivers.surname
+            ORDER BY podiums DESC
+        """,
+
+        'teams_count_wins': """
+            WITH list_team AS (
+                SELECT DISTINCT constructors.name, constructors.constructorId
+                FROM constructors
+                JOIN constructor_standings ON constructors.constructorId = constructor_standings.constructorId
+                JOIN races ON constructor_standings.raceId = races.raceId
+                WHERE races.year = 2021
+            ),
+            season_results AS (
+                SELECT results.constructorId, results.position
+                FROM results
+                JOIN races ON results.raceId = races.raceId
+                WHERE races.year = 2021 AND results.position BETWEEN 1 AND 3
+            )
+            SELECT list_team.name, COUNT(season_results.position) AS podiums
+            FROM list_team
+            LEFT JOIN season_results ON list_team.constructorId = season_results.constructorId
+            GROUP BY list_team.constructorId, list_team.name
+            ORDER BY podiums DESC
+        """,
+    }
 
 def drivers_sql_queries():
     pass
 
 def teams_sql_queries():
     pass
+
+
+
+
+
+
