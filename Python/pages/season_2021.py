@@ -12,7 +12,7 @@ def show_2021(connection, func_get_queries):
     dataframes = {name: pd.read_sql_query(sql, connection) for name, sql in queries.items()}
 
     graph_drivers_titles = px.bar(
-        data_frame=dataframes['drivers_count_wins'],
+        data_frame=dataframes['drivers_count_podiums'],
         x='podiums',
         y='surname',
         color='surname',
@@ -24,7 +24,7 @@ def show_2021(connection, func_get_queries):
     )
 
     graph_teams_titles = px.bar(
-        data_frame=dataframes['teams_count_wins'],
+        data_frame=dataframes['teams_count_podiums'],
         x='podiums',
         y='name',
         color='name',
@@ -131,9 +131,9 @@ def show_2021(connection, func_get_queries):
             st.subheader('Кубок конструкторов и личный зачет')
             left_column, right_column = st.columns(2)
             with left_column:
-                st.dataframe(dataframes['team_champions'], hide_index=True)
+                st.dataframe(dataframes['team_champions'], hide_index=True, height=410)
             with right_column:
-                st.dataframe(dataframes['driver_champions'], hide_index=True)
+                st.dataframe(dataframes['driver_champions'], hide_index=True, height=410)
 
         with st.container(gap=0):
             st.subheader('Количество подиумов у команд и пилотов')

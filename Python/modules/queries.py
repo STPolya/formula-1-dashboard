@@ -94,7 +94,7 @@ def season_21_sql_queries():
         """,
 
         'drivers_points_dynamic': """
-            SELECT drivers.surname, driver_standings.points, races.date || ', ' || circuits.name AS date_place
+            SELECT drivers.surname, driver_standings.points, races.date || ', ' || circuits.country AS date_place
             FROM races
             JOIN driver_standings ON races.raceId = driver_standings.raceId
             JOIN drivers ON driver_standings.driverId = drivers.driverId AND drivers.surname IN ('Verstappen', 'Hamilton', 'Bottas')
@@ -104,7 +104,7 @@ def season_21_sql_queries():
         """,
 
         'teams_points_dynamic': """
-            SELECT constructors.name, constructor_standings.points, races.date || ', ' || circuits.name AS date_place
+            SELECT constructors.name, constructor_standings.points, races.date || ', ' || circuits.country AS date_place
             FROM races
             JOIN constructor_standings ON races.raceId = constructor_standings.raceId
             JOIN constructors ON constructor_standings.constructorId = constructors.constructorId AND constructors.name IN ('Ferrari', 'Mercedes', 'Red Bull')
@@ -119,7 +119,7 @@ def season_21_sql_queries():
             JOIN races ON circuits.circuitId = races.circuitId AND races.year = 2021
         """,
 
-        'drivers_count_wins': """
+        'drivers_count_podiums': """
             WITH list_drivers AS (
                 SELECT DISTINCT drivers.surname, drivers.driverId
                 FROM drivers
@@ -141,7 +141,7 @@ def season_21_sql_queries():
             ORDER BY podiums DESC
         """,
 
-        'teams_count_wins': """
+        'teams_count_podiums': """
             WITH list_team AS (
                 SELECT DISTINCT constructors.name, constructors.constructorId
                 FROM constructors
@@ -164,10 +164,186 @@ def season_21_sql_queries():
     }
 
 def drivers_sql_queries():
-    pass
+    return {
+        'dynamic_drivers_points': """
+            SELECT driver_standings.points, races.date || ', ' || circuits.country AS date_place
+            FROM races
+            JOIN driver_standings ON races.raceId = driver_standings.raceId
+            JOIN drivers ON driver_standings.driverId = drivers.driverId
+            JOIN circuits ON races.circuitId = circuits.circuitId
+            WHERE year = 2021 AND surname = ?
+            ORDER BY date ASC
+        """,
+
+        'driver_points_championship': """
+            SELECT
+                driver_standings.points,
+                driver_standings.position,
+                constructors.name AS team
+            FROM races
+                     JOIN driver_standings ON races.raceId = driver_standings.raceId
+                     JOIN drivers ON driver_standings.driverId = drivers.driverId
+                     LEFT JOIN results ON races.raceId = results.raceId
+                AND drivers.driverId = results.driverId
+                     LEFT JOIN constructors ON results.constructorId = constructors.constructorId
+            WHERE races.year = 2021 AND races.round = (SELECT MAX(round) FROM races WHERE races.year = 2021)
+              AND drivers.surname = ?
+        """,
+
+        'percent_points_races': """
+            SELECT ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM races WHERE races.year = 2021), 1) || ' %' AS points_races_percent 
+            FROM results
+            JOIN drivers ON results.driverId = drivers.driverId
+            JOIN races ON results.raceId = races.raceId
+            WHERE drivers.surname = ? AND races.year = 2021 AND results.position BETWEEN 1 AND 10
+        """,
+
+        'percent_dnf_races': """
+            SELECT ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM races WHERE races.year = 2021), 1) || ' %' AS dnf_races_percent
+            FROM results
+            JOIN drivers ON results.driverId = drivers.driverId
+            JOIN races ON results.raceId = races.raceId
+            WHERE drivers.surname = ? AND races.year = 2021 AND results.position IS NULL
+        """,
+
+        'avg_quali_position': """
+            SELECT ROUND(AVG(position), 1) AS avg_quali_position
+            FROM qualifying
+            JOIN races ON qualifying.raceId = races.raceId
+            JOIN drivers ON qualifying.driverId = drivers.driverId
+            WHERE races.year = 2021 and drivers.surname = ?
+        """,
+
+        'avg_race_position': """
+            SELECT ROUND(AVG(results.position), 1) AS avg_race_position
+            FROM results
+            JOIN races ON results.raceId = races.raceId
+            JOIN drivers ON results.driverId = drivers.driverId
+            WHERE races.year = 2021 and drivers.surname = ?
+        """,
+
+        'count_wins': """
+            SELECT COUNT(*) AS count_wins
+            FROM results
+            JOIN races ON results.raceId = races.raceId
+            JOIN drivers ON results.driverId = drivers.driverId
+            WHERE races.year = 2021 and drivers.surname = ? AND results.position = 1
+        """,
+
+        'count_podiums': """
+            SELECT COUNT(*) AS count_podiums
+            FROM results
+            JOIN races ON results.raceId = races.raceId
+            JOIN drivers ON results.driverId = drivers.driverId
+            WHERE races.year = 2021 and drivers.surname = ? AND (results.position > 0 AND results.position < 4)
+        """,
+
+        'table_results': """
+            SELECT
+                circuits.country,
+                races.date,
+                qualifying.position AS quali,
+                results.positionText,
+                results.points
+            FROM races
+            JOIN results ON races.raceId = results.raceId
+            JOIN drivers ON results.driverId = drivers.driverId
+            JOIN circuits ON races.circuitId = circuits.circuitId
+            LEFT JOIN qualifying ON races.raceId = qualifying.raceId AND results.driverId = qualifying.driverId
+            WHERE races.year = 2021 AND drivers.surname = ?
+            ORDER BY races.date
+        """,
+    }
 
 def teams_sql_queries():
-    pass
+    return {
+        'dynamic_teams_points': """
+            SELECT constructor_standings.points, races.date || ', ' || circuits.country AS date_place
+            FROM races
+                     JOIN constructor_standings ON races.raceId = constructor_standings.raceId
+                     JOIN constructors ON constructor_standings.constructorId = constructors.constructorId
+                     JOIN circuits ON races.circuitId = circuits.circuitId
+            WHERE year = 2021 AND constructors.name = ?
+            ORDER BY date ASC
+        """,
+
+        'team_points_championship': """
+            SELECT
+                constructor_standings.points,
+                constructor_standings.position,
+                (SELECT COUNT(DISTINCT results.driverId) FROM results
+                JOIN races ON results.raceId = races.raceId
+                WHERE races.year = 2021 AND results.constructorId = constructors.constructorId
+                ) AS drivers_count
+            FROM races
+            JOIN constructor_standings ON races.raceId = constructor_standings.raceId
+            JOIN constructors ON constructor_standings.constructorId = constructors.constructorId
+            WHERE races.year = 2021 AND races.round = (SELECT MAX(round) FROM races WHERE races.year = 2021) AND constructors.name = ?
+        """,
+
+        'percent_points_races': """
+            WITH team_results AS (
+                SELECT results.position, results.points
+                FROM results
+                JOIN constructors ON results.constructorId = constructors.constructorId
+                JOIN races ON results.raceId = races.raceId
+                WHERE constructors.name = ? AND races.year = 2021
+            )
+            SELECT ROUND(COUNT(*) * 100.0 / NULLIF((SELECT COUNT(*) FROM team_results),0 ), 1) || ' %' AS points_finishes_percent
+            FROM team_results
+            WHERE position BETWEEN 1 AND 10
+        """,
+
+        'percent_dnf_races': """
+            WITH team_results AS (
+                SELECT results.position
+                FROM results
+                JOIN constructors ON results.constructorId = constructors.constructorId
+                JOIN races ON results.raceId = races.raceId
+                WHERE constructors.name = ? AND races.year = 2021
+            )
+            SELECT ROUND(COUNT(*) * 100.0 / NULLIF((SELECT COUNT(*) FROM team_results), 0), 1) || ' %' AS missing_position_percent
+            FROM team_results
+            WHERE position IS NULL
+        """,
+
+        'count_podiums': """
+            SELECT COUNT(*)
+            FROM results
+            JOIN races ON results.raceId = races.raceId
+            JOIN constructors ON results.constructorId = constructors.constructorId
+            WHERE races.year = 2021 AND constructors.name = ? AND (results.position > 0 AND results.position < 4)
+        """,
+
+        'avg_quali_position': """
+            SELECT ROUND(AVG(position), 1) AS avg_quali_position
+            FROM qualifying
+            JOIN races ON qualifying.raceId = races.raceId
+            JOIN constructors ON qualifying.constructorId = constructors.constructorId
+            WHERE races.year = 2021 and constructors.name = ?
+        """,
+
+        'avg_race_position': """
+            SELECT ROUND(AVG(results.position), 1) AS avg_race_position
+            FROM results
+            JOIN races ON results.raceId = races.raceId
+            JOIN constructors ON results.constructorId = constructors.constructorId
+            WHERE races.year = 2021 and constructors.name = ?
+        """,
+
+        'drivers_points': """
+            SELECT
+                drivers.surname,
+                driver_standings.points
+            FROM races
+            JOIN results ON races.raceId = results.raceId
+            JOIN drivers ON results.driverId = drivers.driverId
+            JOIN constructors ON results.constructorId = constructors.constructorId
+            JOIN driver_standings ON drivers.driverId = driver_standings.driverId AND races.raceId = driver_standings.raceId
+            WHERE constructors.name = ? AND races.year = 2021 AND races.round = (SELECT MAX(round) FROM races WHERE races.year = 2021)
+            ORDER BY driver_standings.points DESC;
+        """,
+    }
 
 
 
