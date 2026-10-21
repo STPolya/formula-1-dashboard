@@ -42,10 +42,10 @@
 
 ## Версии проекта
 
-| Версия | Основные инструменты | Инструкция |
-|---|---|---|
+| Версия | Основные инструменты | Инструкция                     |
+|---|---|--------------------------------|
 | Power BI | Power Query, DAX, SQLite через ODBC | [Power BI](power_bi/README.md) |
-| Python | SQL, pandas, Plotly, Streamlit | [Python](python/README.md) |
+| Python | SQL, pandas, Plotly, Streamlit | [Python](python/README.md)     |
 
 ## Данные
 
